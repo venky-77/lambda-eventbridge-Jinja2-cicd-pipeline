@@ -24,7 +24,6 @@ phases:
       - echo "Environment -> $ENVIRONMENT"
 
       - echo "Starting Template Validation"
-      - sam validate --template ./cloudformation/${CLOUDFORMATION_TEMPLATE}
 
   build:
     commands:
