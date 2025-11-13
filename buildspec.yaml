@@ -34,13 +34,24 @@ phases:
       - echo "📂 Contents of output/:"
       - ls -l output/ || echo "No templates generated."
 
-      - echo "----Deploying Cloudformation Stack - lambda-eventbridge-cft----"
-      - sam deploy \
-          --capabilities CAPABILITY_AUTO_EXPAND \
-          --no-fail-on-empty-changeset \
-          --region ${REGION} \
-          --stack-name lambda-eventbridge-cft \
-          --template-file ./cloudformation/${CLOUDFORMATION_TEMPLATE}
+      - |
+        if [ "${CODEBUILD_WEBHOOK_EVENT}" = "PULL_REQUEST_MERGED" ] || [ "${MANUAL_TRIGGER}" = "TRUE" ]; then
+          echo
+          echo "Starting Cloudformation Deployment for Projects in /project"
+
+          echo
+          echo "----Deploying Cloudformation Stack - ${stack_name}----"
+          echo
+          echo "----Variables Set in buildspec.yaml----"
+          echo "Cloudformation Template: ${CLOUDFORMATION_TEMPLATE}"
+          echo "GitHub Repo Name: ${github_repo_name}"
+          echo "Stack Name: ${stack_name}"
+          echo "Lambda Function Name: ${lambda_function_name}"
+          echo "EventBridge Scheduler Rule Name: ${eventbridge_scheduler_rule_name}"
+          echo
+          echo "----CloudFormation Deploy Command----"
+
+        fi
 
   post_build:
     commands:
@@ -56,7 +67,7 @@ phases:
               --stack-name "$stack_name" \
               --capabilities CAPABILITY_NAMED_IAM \
               --no-fail-on-empty-changeset \
-              --region ${REGION}
+            
           done
         else
           echo "✅ No templates to deploy. Skipping."
@@ -65,6 +76,8 @@ phases:
 artifacts:
   files:
     - output/*.yaml
+
+
 
 
 
