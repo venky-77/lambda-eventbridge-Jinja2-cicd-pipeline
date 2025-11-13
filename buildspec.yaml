@@ -17,37 +17,17 @@ phases:
 
   post_build:
     commands:
-      - echo "🚀 Deploying only changed templates..."
+      - echo "🚀 Deploying rendered templates..."
       - |
         if [ -d output ] && [ "$(ls -A output)" ]; then
           for file in output/*.yaml; do
-            stack_name=$(basename "$file" .yaml)
-            echo "Checking if $stack_name has changed..."
-            
-            # Compute checksum of current file
-            new_hash=$(sha256sum "$file" | awk '{print $1}')
-            
-            # Store previous hash in a cache directory
-            cache_file=".cache/${stack_name}.sha256"
-            mkdir -p .cache
-            
-            if [ -f "$cache_file" ]; then
-              old_hash=$(cat "$cache_file")
-            else
-              old_hash=""
-            fi
-            
-            if [ "$new_hash" != "$old_hash" ]; then
-              echo "🔄 Change detected in $stack_name. Deploying..."
-              aws cloudformation deploy \
-                --template-file "$file" \
-                --stack-name "$stack_name" \
-                --capabilities CAPABILITY_NAMED_IAM \
-                --no-fail-on-empty-changeset
-              echo "$new_hash" > "$cache_file"
-            else
-              echo "✅ No changes in $stack_name. Skipping deployment."
-            fi
+            stack_name=$(basename "$file" .yaml | sed 's/_/-/g')
+            echo "Deploying stack: $stack_name"
+            aws cloudformation deploy \
+              --template-file "$file" \
+              --stack-name "$stack_name" \
+              --capabilities CAPABILITY_NAMED_IAM \
+              --no-fail-on-empty-changeset
           done
         else
           echo "✅ No templates to deploy. Skipping."
@@ -56,3 +36,92 @@ phases:
 artifacts:
   files:
     - output/*.yaml
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# version: 0.2
+
+# phases:
+#   install:
+#     runtime-versions:
+#       python: 3.9
+#     commands:
+#       - echo "🔧 Installing dependencies..."
+#       - pip install Jinja2 PyYAML
+
+#   build:
+#     commands:
+#       - echo "📦 Rendering CloudFormation templates..."
+#       - python render.py
+#       - echo "📂 Contents of output/:"
+#       - ls -l output/ || echo "No templates generated."
+
+#   post_build:
+#     commands:
+#       - echo "🚀 Deploying only changed templates..."
+#       - |
+#         if [ -d output ] && [ "$(ls -A output)" ]; then
+#           for file in output/*.yaml; do
+#             stack_name=$(basename "$file" .yaml)
+#             echo "Checking if $stack_name has changed..."
+            
+#             # Compute checksum of current file
+#             new_hash=$(sha256sum "$file" | awk '{print $1}')
+            
+#             # Store previous hash in a cache directory
+#             cache_file=".cache/${stack_name}.sha256"
+#             mkdir -p .cache
+            
+#             if [ -f "$cache_file" ]; then
+#               old_hash=$(cat "$cache_file")
+#             else
+#               old_hash=""
+#             fi
+            
+#             if [ "$new_hash" != "$old_hash" ]; then
+#               echo "🔄 Change detected in $stack_name. Deploying..."
+#               aws cloudformation deploy \
+#                 --template-file "$file" \
+#                 --stack-name "$stack_name" \
+#                 --capabilities CAPABILITY_NAMED_IAM \
+#                 --no-fail-on-empty-changeset
+#               echo "$new_hash" > "$cache_file"
+#             else
+#               echo "✅ No changes in $stack_name. Skipping deployment."
+#             fi
+#           done
+#         else
+#           echo "✅ No templates to deploy. Skipping."
+#         fi
+
+# artifacts:
+#   files:
+#     - output/*.yaml
