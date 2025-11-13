@@ -1,0 +1,131 @@
+[Container] 2025/11/13 17:44:51.276052 Running on CodeBuild On-demand
+[Container] 2025/11/13 17:44:51.276070 Waiting for agent ping
+[Container] 2025/11/13 17:44:52.782130 Waiting for DOWNLOAD_SOURCE
+[Container] 2025/11/13 17:44:53.682958 Phase is DOWNLOAD_SOURCE
+[Container] 2025/11/13 17:44:53.684425 CODEBUILD_SRC_DIR=/codebuild/output/src3205090701/src/github.com/venky-77/lambda-eventbridge-logic-cft
+[Container] 2025/11/13 17:44:53.685470 YAML location is /codebuild/output/src3205090701/src/github.com/venky-77/lambda-eventbridge-logic-cft/buildspec.yaml
+[Container] 2025/11/13 17:44:53.687963 Setting HTTP client timeout to higher timeout for Github and GitHub Enterprise sources
+[Container] 2025/11/13 17:44:53.688050 Processing environment variables
+[Container] 2025/11/13 17:44:54.062176 Selecting 'python' runtime version '3.9' based on manual selections...
+[Container] 2025/11/13 17:44:54.063293 Running command echo "Installing Python version 3.9 ..."
+Installing Python version 3.9 ...
+
+[Container] 2025/11/13 17:44:54.072343 Running command pyenv global $PYTHON_39_VERSION
+
+[Container] 2025/11/13 17:44:54.122774 Moving to directory /codebuild/output/src3205090701/src/github.com/venky-77/lambda-eventbridge-logic-cft
+[Container] 2025/11/13 17:44:54.122813 Cache is not defined in the buildspec
+[Container] 2025/11/13 17:44:54.301820 Skip cache due to: no paths specified to be cached
+[Container] 2025/11/13 17:44:54.302099 Registering with agent
+[Container] 2025/11/13 17:44:54.474857 Phases found in YAML: 3
+[Container] 2025/11/13 17:44:54.474878  INSTALL: 2 commands
+[Container] 2025/11/13 17:44:54.474883  BUILD: 4 commands
+[Container] 2025/11/13 17:44:54.474887  POST_BUILD: 2 commands
+[Container] 2025/11/13 17:44:54.475203 Phase complete: DOWNLOAD_SOURCE State: SUCCEEDED
+[Container] 2025/11/13 17:44:54.475215 Phase context status code:  Message: 
+[Container] 2025/11/13 17:44:54.864981 Entering phase INSTALL
+[Container] 2025/11/13 17:44:55.036567 Running command echo "🔧 Installing dependencies..."
+🔧 Installing dependencies...
+
+[Container] 2025/11/13 17:44:55.045218 Running command pip install Jinja2 PyYAML
+Collecting Jinja2
+  Downloading jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)
+Requirement already satisfied: PyYAML in /root/.pyenv/versions/3.9.24/lib/python3.9/site-packages (6.0.2)
+Collecting MarkupSafe>=2.0 (from Jinja2)
+  Downloading markupsafe-3.0.3-cp39-cp39-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)
+Downloading jinja2-3.1.6-py3-none-any.whl (134 kB)
+Downloading markupsafe-3.0.3-cp39-cp39-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (20 kB)
+Installing collected packages: MarkupSafe, Jinja2
+
+Successfully installed Jinja2-3.1.6 MarkupSafe-3.0.3
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+
+[notice] A new release of pip is available: 25.1.1 -> 25.3
+[notice] To update, run: pip install --upgrade pip
+
+[Container] 2025/11/13 17:44:56.135790 Phase complete: INSTALL State: SUCCEEDED
+[Container] 2025/11/13 17:44:56.135813 Phase context status code:  Message: 
+[Container] 2025/11/13 17:44:56.168394 Entering phase PRE_BUILD
+[Container] 2025/11/13 17:44:56.170910 Phase complete: PRE_BUILD State: SUCCEEDED
+[Container] 2025/11/13 17:44:56.170927 Phase context status code:  Message: 
+[Container] 2025/11/13 17:44:56.213227 Entering phase BUILD
+[Container] 2025/11/13 17:44:56.214339 Running command echo "📦 Rendering CloudFormation templates..."
+📦 Rendering CloudFormation templates...
+
+[Container] 2025/11/13 17:44:56.222296 Running command python render.py
+✅ Generated: output/lambda-eb-cases-base-alert-status.yaml from parameters_alex.yaml
+✅ Generated: output/lambda-eb-cases-base1-alert-comment.yaml from parameters_victory.yaml
+
+[Container] 2025/11/13 17:44:56.379916 Running command echo "📂 Contents of output/:"
+📂 Contents of output/:
+
+[Container] 2025/11/13 17:44:56.387733 Running command ls -l output/ || echo "No templates generated."
+total 8
+-rw-r--r-- 1 root root 4067 Nov 13 17:44 lambda-eb-cases-base1-alert-comment.yaml
+-rw-r--r-- 1 root root 4044 Nov 13 17:44 lambda-eb-cases-base-alert-status.yaml
+
+[Container] 2025/11/13 17:44:56.396456 Phase complete: BUILD State: SUCCEEDED
+[Container] 2025/11/13 17:44:56.396474 Phase context status code:  Message: 
+[Container] 2025/11/13 17:44:56.433649 Entering phase POST_BUILD
+[Container] 2025/11/13 17:44:56.435271 Running command echo "🚀 Deploying only changed templates..."
+🚀 Deploying only changed templates...
+
+[Container] 2025/11/13 17:44:56.442852 Running command if [ -d output ] && [ "$(ls -A output)" ]; then
+  for file in output/*.yaml; do
+    stack_name=$(basename "$file" .yaml)
+    echo "Checking if $stack_name has changed..."
+    
+    # Compute checksum of current file
+    new_hash=$(sha256sum "$file" | awk '{print $1}')
+    
+    # Store previous hash in a cache directory
+    cache_file=".cache/${stack_name}.sha256"
+    mkdir -p .cache
+    
+    if [ -f "$cache_file" ]; then
+      old_hash=$(cat "$cache_file")
+    else
+      old_hash=""
+    fi
+    
+    if [ "$new_hash" != "$old_hash" ]; then
+      echo "🔄 Change detected in $stack_name. Deploying..."
+      aws cloudformation deploy \
+        --template-file "$file" \
+        --stack-name "$stack_name" \
+        --capabilities CAPABILITY_NAMED_IAM \
+        --no-fail-on-empty-changeset
+      echo "$new_hash" > "$cache_file"
+    else
+      echo "✅ No changes in $stack_name. Skipping deployment."
+    fi
+  done
+else
+  echo "✅ No templates to deploy. Skipping."
+fi
+
+Checking if lambda-eb-cases-base1-alert-comment has changed...
+🔄 Change detected in lambda-eb-cases-base1-alert-comment. Deploying...
+
+Waiting for changeset to be created..
+Waiting for stack create/update to complete
+Successfully created/updated stack - lambda-eb-cases-base1-alert-comment
+Checking if lambda-eb-cases-base-alert-status has changed...
+🔄 Change detected in lambda-eb-cases-base-alert-status. Deploying...
+
+Waiting for changeset to be created..
+Waiting for stack create/update to complete
+Successfully created/updated stack - lambda-eb-cases-base-alert-status
+
+[Container] 2025/11/13 17:48:09.536138 Phase complete: POST_BUILD State: SUCCEEDED
+[Container] 2025/11/13 17:48:09.536160 Phase context status code:  Message: 
+[Container] 2025/11/13 17:48:09.802375 Set report auto-discover timeout to 5 seconds
+[Container] 2025/11/13 17:48:09.802450 Expanding base directory path:  .
+[Container] 2025/11/13 17:48:09.806116 Assembling file list
+[Container] 2025/11/13 17:48:09.806129 Expanding .
+[Container] 2025/11/13 17:48:09.809527 Expanding file paths for base directory .
+[Container] 2025/11/13 17:48:09.809541 Assembling file list
+[Container] 2025/11/13 17:48:09.809544 Expanding **/*
+[Container] 2025/11/13 17:48:09.813236 No matching auto-discover report paths found
+[Container] 2025/11/13 17:48:09.813258 Report auto-discover file discovery took 0.010883 seconds
+[Container] 2025/11/13 17:48:09.813271 Phase complete: UPLOAD_ARTIFACTS State: SUCCEEDED
+[Container] 2025/11/13 17:48:09.813282 Phase context status code:  Message: 
