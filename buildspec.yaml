@@ -10,24 +10,44 @@ phases:
 
   build:
     commands:
-      - echo "📦 Rendering CloudFormation templates from changed parameter files..."
+      - echo "📦 Rendering CloudFormation templates..."
       - python render.py
       - echo "📂 Contents of output/:"
       - ls -l output/ || echo "No templates generated."
 
   post_build:
     commands:
-      - echo "🚀 Deploying rendered templates..."
+      - echo "🚀 Deploying only changed templates..."
       - |
         if [ -d output ] && [ "$(ls -A output)" ]; then
           for file in output/*.yaml; do
             stack_name=$(basename "$file" .yaml)
-            echo "Deploying stack: $stack_name"
-            aws cloudformation deploy \
-              --template-file "$file" \
-              --stack-name "$stack_name" \
-              --capabilities CAPABILITY_NAMED_IAM \
-              --no-fail-on-empty-changeset
+            echo "Checking if $stack_name has changed..."
+            
+            # Compute checksum of current file
+            new_hash=$(sha256sum "$file" | awk '{print $1}')
+            
+            # Store previous hash in a cache directory
+            cache_file=".cache/${stack_name}.sha256"
+            mkdir -p .cache
+            
+            if [ -f "$cache_file" ]; then
+              old_hash=$(cat "$cache_file")
+            else
+              old_hash=""
+            fi
+            
+            if [ "$new_hash" != "$old_hash" ]; then
+              echo "🔄 Change detected in $stack_name. Deploying..."
+              aws cloudformation deploy \
+                --template-file "$file" \
+                --stack-name "$stack_name" \
+                --capabilities CAPABILITY_NAMED_IAM \
+                --no-fail-on-empty-changeset
+              echo "$new_hash" > "$cache_file"
+            else
+              echo "✅ No changes in $stack_name. Skipping deployment."
+            fi
           done
         else
           echo "✅ No templates to deploy. Skipping."
