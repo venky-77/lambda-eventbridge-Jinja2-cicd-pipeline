@@ -1,3 +1,4 @@
 # team_configs/parameters_victory.yaml
 - schema_name: cases_base1
   table_name: alert_comment
+  schedule_expression: "rate(5 minutes)"
