@@ -17,7 +17,7 @@ Parameters:
   GitHubUrl:
     Type: String
     Description: GitHub HTTPS URL
-    Default: https://github.com/venky-77/lambda-eventbridge-logic-cft
+    Default: https://github.com/venky-77/lambda-eventbridge-logic-cft.git
 
   GitHubCodeConnectionsArn:
     Type: String
