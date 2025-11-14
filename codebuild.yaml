@@ -49,7 +49,7 @@ Resources:
       Description: Automates Lambda + EventBridge deployment using Jinja2 and CloudFormation
       ServiceRole: arn:aws:iam::794038240530:role/service-role/codebuild-New-Project-service-role
       Source:
-        Type: GITHUB_CONNECT
+        Type: GITHUB
         Location: !Ref GitHubUrl
         Auth:
           Type: CODECONNECTIONS
