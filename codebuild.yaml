@@ -4,11 +4,6 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Creates a CodeBuild Project for Lambda + EventBridge Jinja2 automation.
 
 Parameters:
-  CloudformationTemplate:
-    Description: Cloudformation templte to be used by CodeBuild. Defaulted.
-    Type: String
-    Default: templates/lambda-eventbridge-cloudformation.yaml.j2
-
   GitHubBranch:
     Type: String
     Description: GitHub branch to build from
@@ -17,12 +12,12 @@ Parameters:
   GitHubRepoName:
     Type: String
     Description: GitHub repository name
-    Default: lambda-eventbridge-cft
+    Default: lambda-eventbridge-logic-cft
 
   GitHubUrl:
     Type: String
     Description: GitHub HTTPS URL
-    Default: https://github.com/venky-77/lambda-eventbridge-cft
+    Default: https://github.com/venky-77/lambda-eventbridge-logic-cft
 
   GitHubCodeConnectionsArn:
     Type: String
@@ -76,8 +71,6 @@ Resources:
             Value: !Ref GitHubRepoName
           - Name: REGION
             Value: !Sub ${AWS::Region}
-          - Name: CLOUDFORMATION_TEMPLATE
-            Value: !Ref CloudformationTemplate
       TimeoutInMinutes: 10
 
 Outputs:
