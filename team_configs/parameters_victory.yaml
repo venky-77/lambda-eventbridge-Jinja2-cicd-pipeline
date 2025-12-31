@@ -1,4 +1,6 @@
-# team_configs/parameters_victory.yaml
-- schema_name: cases_base
-  table_name: alert_comment
-  schedule_expression: "rate(5 minutes)"
+# team_configs/parameters_empolyee_data.yaml
+- schema_name: public
+  table_name: empolyee 
+  schedule_expression: "cron(0/5 * * * ? *)"
+  workgroup_name: "default-workgroup"
+  Database_name: "dev"
