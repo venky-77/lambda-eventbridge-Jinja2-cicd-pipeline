@@ -1,8 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Lambda + EventBridge for {{ table_name }}
+Description: Lambda + EventBridge for Unload Redshift to S3 {{ table_name }} data.
 
 Resources:
-
   LambdaEventBridge{{ schema_name | replace("_", "") }}{{ table_name | replace("_", "") }}:
     Type: AWS::Lambda::Function
     Properties:
@@ -10,88 +9,80 @@ Resources:
       Runtime: python3.9
       Handler: index.lambda_handler
       Role: arn:aws:iam::794038240530:role/lambda-role
+      Timeout: 300
+      MemorySize: 256
       Code:
         ZipFile: |
           import boto3
+          import os
+          import time
           import csv
           import io
-          import os
+          from datetime import datetime, timezone
 
           def lambda_handler(event, context):
-              cluster_id   = os.environ['REDSHIFT_CLUSTER_ID']
-              database     = os.environ['REDSHIFT_DB']
-              db_user      = os.environ['REDSHIFT_USER']
-              sql_query    = os.environ['SQL_QUERY']
-              s3_bucket    = os.environ['S3_BUCKET']
-              s3_prefix    = os.environ['S3_PREFIX']
+              # Create Redshift client
+              redshift = boto3.client('redshift-data', region_name='us-east-1')
 
-              sts_connection = boto3.client('sts')
-              acct_b = sts_connection.assume_role(
-                  RoleArn='arn:aws:iam::123456789012:role/cross-account-role',
-                  RoleSessionName="cross_acct_lambda"
-              )
-
-              ACCESS_KEY = acct_b['Credentials']['AccessKeyId']
-              SECRET_KEY = acct_b['Credentials']['SecretAccessKey']
-              SESSION_TOKEN = acct_b['Credentials']['SessionToken']
-
-              rsd = boto3.client(
-                  'redshift-data',
-                  aws_access_key_id=ACCESS_KEY,
-                  aws_secret_access_key=SECRET_KEY,
-                  aws_session_token=SESSION_TOKEN,
-              )
-
-              s3 = boto3.client("s3")
-
-              print("Executing query on Redshift...")
-              response = rsd.execute_statement(
-                  ClusterIdentifier=cluster_id,
-                  Database=database,
-                  DbUser=db_user,
-                  Sql=sql_query
+              # Execute SQL query
+              response = redshift.execute_statement(
+                  WorkgroupName=os.environ['REDSHIFT_WORKGROUP'],
+                  Database=os.environ['REDSHIFT_DATABASE'],
+                  Sql=os.environ['SQL_QUERY'],
+                  WithEvent=False
               )
 
               query_id = response['Id']
-              print("query_id...", query_id)
 
-              status = "SUBMITTED"
-              while status in ["SUBMITTED", "PICKED", "STARTED"]:
-                  desc = rsd.describe_statement(Id=query_id)
-                  status = desc['Status']
+              # Wait for query to finish
+              while True:
+                  desc = redshift.describe_statement(Id=query_id)
+                  if desc['Status'] in ['FINISHED', 'FAILED', 'ABORTED']:
+                      break
+                  time.sleep(1)
 
-              if status != "FINISHED":
-                  raise Exception(f"Query failed with status: {status}")
+              if desc['Status'] != 'FINISHED':
+                  raise Exception(f"Query failed: {desc.get('Error')}")
 
-              result = rsd.get_statement_result(Id=query_id)
+              # Get results
+              result = redshift.get_statement_result(Id=query_id)
 
-              print("Columns:", [col['name'] for col in result['ColumnMetadata']])
-              print("Cursor Info:", result.keys())
-
+              # Convert records to CSV
               output = io.StringIO()
               writer = csv.writer(output)
 
+              # Write header
               writer.writerow([col['name'] for col in result['ColumnMetadata']])
-              for row in result['Records']:
-                  writer.writerow([list(field.values())[0] if field else None for field in row])
 
+              # Write rows
+              for record in result['Records']:
+                  row = [list(field.values())[0] if field else None for field in record]
+                  writer.writerow(row)
+
+              # Generate dynamic timestamp for unique file
+              timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+              s3_key = f"{os.environ['S3_KEY'].replace('.csv','')}_{timestamp}.csv"
+
+              # Upload to S3
+              s3 = boto3.client('s3')
               s3.put_object(
-                  Bucket=s3_bucket,
-                  Key=s3_prefix,
+                  Bucket=os.environ['S3_BUCKET'],
+                  Key=s3_key,
                   Body=output.getvalue()
               )
 
-              print(f"Data written to s3://{s3_bucket}/{s3_prefix}")
-              return {"status": "success", "s3_file": f"s3://{s3_bucket}/{s3_prefix}"}
- 
+              return {
+                  "statusCode": 200,
+                  "body": f"Uploaded {len(result['Records'])} records to s3://{os.environ['S3_BUCKET']}/{s3_key}"
+              }
+
       Environment:
         Variables:
-          REDSHIFT_CLUSTER_ID: "your-cluster-id"
-          REDSHIFT_DB: "Redshift"
-          REDSHIFT_USER: "venky"
-          S3_BUCKET: "your-s3-bucket-name"
-          S3_PREFIX: "lambda/{{ schema_name }}_{{ table_name }}.csv"
-          SQL_QUERY: "select * from {{ schema_name }}.{{ table_name }} limit 10;"
+          REDSHIFT_WORKGROUP: "{{ workgroup_name }}"
+          REDSHIFT_DATABASE: "{{ Database_name }}"
+          S3_BUCKET: "{{ s3_bucket_name }}"
+          S3_KEY: "lambda/{{ schema_name }}_{{ table_name }}.csv"
+          SQL_QUERY: "select * from {{ schema_name }}.{{ table_name }};"
 
   EventBridgeRule{{ schema_name | replace("_", "") }}{{ table_name | replace("_", "") }}:
     Type: AWS::Events::Rule
