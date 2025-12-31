@@ -2,8 +2,5 @@
 - schema_name: public
   table_name: sales
   schedule_expression: "cron(0/5 * * * ? *)"
-  s3_bucket_name: "my-redshift-export-bucket-2025"
-  s3_prefix: "lambda/cases_base_alert_comment.csv"
-  sql_query: "select * from cases_base.alert_comment;"
   workgroup_name: "default-workgroup"
   Database_name: "dev"
