@@ -1,55 +1,3 @@
-# version: 0.2
-
-# phases:
-#   install:
-#     runtime-versions:
-#       python: 3.9
-#     commands:
-#       - echo "🔧 Installing dependencies..."
-#       - pip install Jinja2 PyYAML
-
-#   build:
-#     commands:
-#       - echo "📦 Rendering CloudFormation templates..."
-#       - python render.py
-#       - echo "📂 Contents of output/:"
-#       - ls -l output/ || echo "No templates generated."
-
-#   post_build:
-#     commands:
-#       - echo "🚀 Deploying rendered templates..."
-#       - |
-#         if [ -d output ] && [ "$(ls -A output)" ]; then
-#           for file in output/*.yaml; do
-#             stack_name=$(basename "$file" .yaml | sed 's/_/-/g')
-#             echo "Deploying stack: $stack_name"
-#             aws cloudformation deploy \
-#               --template-file "$file" \
-#               --stack-name "$stack_name" \
-#               --capabilities CAPABILITY_NAMED_IAM \
-#               --no-fail-on-empty-changeset
-#           done
-#         else
-#           echo "✅ No templates to deploy. Skipping."
-#         fi
-
-# artifacts:
-#   files:
-#     - output/*.yaml
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 version: 0.2
 
 phases:
@@ -128,6 +76,47 @@ artifacts:
   files:
     - output/*.yaml
 
+
+
+#--------------------------------------------------------------------------------------------------------#
+# version: 0.2
+
+# phases:
+#   install:
+#     runtime-versions:
+#       python: 3.9
+#     commands:
+#       - echo "🔧 Installing dependencies..."
+#       - pip install Jinja2 PyYAML
+
+#   build:
+#     commands:
+#       - echo "📦 Rendering CloudFormation templates..."
+#       - python render.py
+#       - echo "📂 Contents of output/:"
+#       - ls -l output/ || echo "No templates generated."
+
+#   post_build:
+#     commands:
+#       - echo "🚀 Deploying rendered templates..."
+#       - |
+#         if [ -d output ] && [ "$(ls -A output)" ]; then
+#           for file in output/*.yaml; do
+#             stack_name=$(basename "$file" .yaml | sed 's/_/-/g')
+#             echo "Deploying stack: $stack_name"
+#             aws cloudformation deploy \
+#               --template-file "$file" \
+#               --stack-name "$stack_name" \
+#               --capabilities CAPABILITY_NAMED_IAM \
+#               --no-fail-on-empty-changeset
+#           done
+#         else
+#           echo "✅ No templates to deploy. Skipping."
+#         fi
+
+# artifacts:
+#   files:
+#     - output/*.yaml
 
 
 
