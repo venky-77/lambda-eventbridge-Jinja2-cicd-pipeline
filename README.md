@@ -184,8 +184,3 @@ aws events put-events --entries '[{"Source":"custom.test","DetailType":"TestEven
 - Parameter examples: [team_configs/](team_configs/)
 - Build spec: [buildspec.yaml](buildspec.yaml)
 - Helper script: [render.py](render.py)
-
-If you want, I can also:
-- run a local render using a particular parameter file,
-- validate the rendered template,
-- or create an example CodePipeline CloudFormation template to automate the pipeline.
