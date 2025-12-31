@@ -4,3 +4,4 @@
   schedule_expression: "cron(0/5 * * * ? *)"
   workgroup_name: "default-workgroup"
   Database_name: "dev"
+  s3_bucket_name: "my-redshift-export-bucket-2025"
