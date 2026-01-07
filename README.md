@@ -184,3 +184,217 @@ aws events put-events --entries '[{"Source":"custom.test","DetailType":"TestEven
 - Parameter examples: [team_configs/](team_configs/)
 - Build spec: [buildspec.yaml](buildspec.yaml)
 - Helper script: [render.py](render.py)
+
+
+
+---------------------------------------
+
+# Contains cloudformation template to create the Lambda and potentially Stepfunction.
+
+## Deployment of codebuild cloudformation template which will set the pipeline to deploy lambda
+
+1. Run the sample command:
+    `aws cloudformation deploy \
+        --profile default \
+        --capabilities CAPABILITY_AUTO_EXPAND \
+        --no-execute-changeset \
+        --no-fail-on-empty-changeset \
+        --region  \
+        --role-arn \
+        --stack-name rs-unload-poc-codebuild-cft \
+        --template-file ./cloudformation/codebuild-cloudformation.yaml \
+        --parameter-overrides \
+            CloudformationTemplate=lambda-eventbridge-cloudformation.yaml \
+            GitHubBranch=cicd \
+            GitHubRepoName=redshift-unload \
+            GitHubUrl= \
+            KmsKey= \
+            GitHubCodeConnectionsArn= \
+        --tags \
+            env=nonprod \
+            product=new \ `
+
+## Testing the deployment of your lambda cloudformation template locally
+
+1. Run the sample command:
+    `aws cloudformation deploy \
+        --profile default \
+        --capabilities CAPABILITY_AUTO_EXPAND \
+        --no-execute-changeset \
+        --no-fail-on-empty-changeset \
+        --region \
+        --role-arn  \
+        --stack-name rs-unload-poc-lambda-cft \
+        --template-file lambda-eventbridge-cloudformation.yaml \
+        --tags \
+            env=nonprod \
+            product=new \ `
+
+3. Navigate to Cloudformation in the AWS Console and approve the changeset to deploy the cloudformation stack and respective resources as specified in your cloudformation.yaml template.
+
+
+## CloudFormation Templates:
+ 
+1. Lambda + EventBridge CFT  This sets up a scheduled Lambda function.
+2. CodeBuild CFT → This automates the deployment of that Lambda setup using GitHub.
+ 
+Together, they create a CI/CD pipeline that deploys a scheduled Lambda function automatically whenever code changes are merged into GitHub.
+ 
+ 
+### Lambda + EventBridge CloudFormation Template
+ 
+This template creates:
+- A Lambda function that runs some code (inline).
+- An EventBridge Scheduler that triggers the Lambda on a recurring schedule (e.g., every 5 minutes).
+ 
+It's Useful
+- You can run background tasks automatically (e.g., data cleanup, reporting, API calls).
+- You don’t need to manually trigger the Lambda it runs on a schedule.
+- Everything is defined as code, so it's repeatable and version-controlled.
+ 
+Key Parameters
+These are inputs you can customize:
+- LambdaFunctionName: Lambda name
+- LambdaRuntime: Python 3.9 or Node.js.
+- LambdaHandler: Entry point for your code.
+- LambdaRoleArn: IAM role that gives Lambda permission to run.
+- ScheduleExpression: How often the Lambda runs (e.g., rate(5 minutes)).
+- ScheduleGroup: Logical grouping for EventBridge schedules.
+ 
+Resources Created
+- AWS::Lambda::Function: The actual Lambda function.
+- AWS::Scheduler::Schedule: The EventBridge rule that triggers the Lambda.
+ 
+ 
+### CodeBuild CloudFormation Template
+ 
+This template creates:
+- A CodeBuild project that pulls code from GitHub.
+- Runs a buildspec.yaml file to deploy the Lambda + EventBridge stack.
+- Automatically triggers when a pull request is merged.
+ 
+It's Useful
+- You don’t need to manually deploy your infrastructure.
+- It ensures consistent, automated deployments.
+- It integrates with GitHub so changes are deployed as part of your development workflow.
+ 
+ Key Parameters:
+ These are inputs you can customize:
+- GitHubBranch, GitHubRepoName, GitHubUrl: Where your code lives.
+- BuildSpec: Instructions for CodeBuild (usually includes aws cloudformation deploy).
+- CloudformationTemplate: The Lambda + EventBridge template to deploy.
+- KmsKey, VpcConfig: Security and networking settings.
+- TimeoutInMinutes: How long the build can run.
+ 
+Resources Created
+- AWS::CodeBuild::Project: The build project that runs your deployment logic.
+ 
+How They Work Together
+ 
+Here’s the full flow:
+ 
+1. You write or update your Lambda code and CloudFormation templates in GitHub.
+2. You merge a pull request into the main branch.
+3. CodeBuild is triggered automatically.
+4. CodeBuild runs the buildspec.yaml, which deploys the Lambda + EventBridge stack using CloudFormation.
+5. Your Lambda is now scheduled to run automatically!
+ 
+ 
+### CloudFormation Basics: 
+Understanding !Ref, !Join, and !GetAtt
+ 
+CloudFormation templates use intrinsic functions to dynamically reference and manipulate resources. Here are the three most important ones used in your templates:
+ 
+1. !Ref — Reference a Parameter or Resource
+ 
+Purpose: Gets the value of a parameter or the name/ID of a resource.
+Used For:
+- Passing user-defined parameters into resources.
+- Linking resources together.
+ Example: FunctionName: !Ref LambdaFunctionName
+
+This tells CloudFormation to use the value of the LambdaFunctionName parameter (e.g., "stormline") as the name of the Lambda function.
+ 
+2. !Join — Combine Strings Together
+ 
+Purpose: Concatenates multiple strings into one.
+Used For:
+- Creating names, paths, or patterns dynamically.
+- Formatting values like ARNs or branch names.
+ Example: !Join ["-", [!Ref Product, "rs-unload-poc-codebuild-cft"]]
+
+If Product = stormline, this becomes: stormline-rs-unload-poc-codebuild-cft
+
+3. !GetAtt — Get Attributes of a Resource
+ 
+Purpose: Retrieves properties (like ARN, URL, etc.) from a created resource.
+Used For:
+- Getting the ARN of a Lambda function to pass into EventBridge.
+- Outputting useful values after deployment.
+ Example: Arn: !GetAtt MyLambdaFunction.Arn
+
+This grabs the ARN (Amazon Resource Name) of the Lambda function named MyLambdaFunction.
+ 
+### Refference documents:
+Lambda:
+https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-lambda-function.html
+
+Codebuild:
+https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-codebuild-project.html
+
+
+## Automated Lambda + EventBridge Deployment using Codebuild and jinja2
+ 
+In modern cloud-native architectures, infrastructure-as-code (IaC) is essential for scalable, repeatable, and auditable deployments. This project demonstrates a modular and automated approach to deploying AWS Lambda functions triggered by EventBridge schedules using CloudFormation templates rendered via Jinja2. The pipeline is designed to support on different schema-table combinations, with full CI/CD integration via GitHub and AWS CodeBuild.
+
+### Design
+- Modularity: Each Lambda function is scoped to a specific table and schema.
+- Parameterization: All dynamic values (e.g., schedule, S3 prefix, SQL query) are externalized in YAML    files.
+- Automation: CloudFormation templates are generated and deployed automatically via CodeBuild.
+- Reusability: The same Jinja2 template is reused across all deployments.
+
+### Workflow Summary
+ 
+Parameters.yaml file in jinja2 specifying:
+   - schema_name
+   - table_name
+   - schedule_expression
+
+A shared Jinja2 template (lambda-eventbridge-coudFormation.yaml.j2) defines the CloudFormation structure for:
+   - Lambda function (with inline code)
+   - EventBridge schedule
+The render.py script loops through all parameter files and renders one CloudFormation template per table.
+AWS CodeBuild runs render.py and deploys each template using aws cloudformation deploy.
+
+### Template Logic
+ 
+The Jinja2 template injects values from the YAML file into the CloudFormation structure. Each Lambda function includes:
+ 
+- Inline Python code with logging
+- Environment variables:
+  - SCHEMA_NAME
+  - TABLE_NAME
+  - EB_SCHEDULE_EXPRESSION 
+
+### Automation via CodeBuild
+ 
+The buildspec.yaml file defines three phases:
+ 
+- Install: Installs Python dependencies (Jinja2, PyYAML)
+- Build: Executes render.py to generate templates
+- Post-build: Deploys each template using AWS CLI
+
+ Replace `<SSO>` with your SSO
+
+aws cloudformation deploy 
+    --profile default \
+    --capabilities CAPABILITY_AUTO_EXPAND \
+    --no-execute-changeset \
+    --no-fail-on-empty-changeset \
+    --region \
+    --role-arn arn:aws-: \
+    --stack-name lambda-poc-codebuild-cft \
+    --template-file ./cloudformation/codebuild-cloudformation.yaml \
+    --tags env=nonprod product=new`
+
+This ensures that every GitHub push results in a fresh deployment of all defined Lambda + EventBridge stacks.
